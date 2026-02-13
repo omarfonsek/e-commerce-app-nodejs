@@ -28,6 +28,13 @@ function model (sequelize, DataTypes) {
     };
 
     const _model = sequelize.define('category', attributes, options)
+    _model.associate = function(models) {
+        _model.belongsToMany(models.product, {
+            through: 'productCategories',
+            foreignKey: 'categoryId',
+            as: 'products'
+        });
+    }
 
     return _model;
 }

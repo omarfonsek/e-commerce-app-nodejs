@@ -6,6 +6,10 @@ function model(sequelize, DataTypes) {
             autoIncrement: true,
             allowNull: false
         },
+        customerId: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
         type: {
             type: DataTypes.STRING(50),
             allowNull: false,
@@ -22,6 +26,17 @@ function model(sequelize, DataTypes) {
     };
 
     const _model = sequelize.define('payment', attributes, options)
+    _model.associate = function(models) {
+        _model.belongsTo(models.customer, {
+            foreignKey: 'customerId',
+            as: 'customer'
+        });
+
+        _model.hasMany(models.order, {
+            foreignKey: 'paymentId',
+            as: 'orders'
+        })
+    }
 
     return _model;
 }

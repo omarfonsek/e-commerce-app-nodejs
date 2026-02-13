@@ -31,6 +31,25 @@ function model(sequelize, DataTypes) {
     };
 
     const _model = sequelize.define('product', attributes, options)
+    _model.associate = function(models) {
+        _model.belongsToMany(models.cart, {
+            through: 'cartProducts',
+            foreignKey: 'productId',
+            as: 'carts'
+        });
+
+        _model.belongsToMany(models.category, {
+            through: 'productCategories',
+            foreignKey: 'productId',
+            as: 'categories'
+        });
+
+        _model.belongsToMany(models.order, {
+            through: 'orderDetail',
+            foreignKey: 'productId',
+            as: 'orders'
+        });
+    };
 
     return _model;
 }

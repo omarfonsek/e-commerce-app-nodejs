@@ -35,6 +35,20 @@ function model(sequelize, DataTypes) {
     }
 
     const _model = sequelize.define('customer', attributes, options)
+    _model.associate = function(models) {
+        _model.hasMany(models.order, {
+            foreignKey: 'customerId',
+            as: "orders"
+        });
+    
+        _model.hasMany(models.payment, {
+            foreignKey: 'customerId',
+            as: 'payments'
+        });
+
+    }
+
+    
 
     return _model;
 }
