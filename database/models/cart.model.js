@@ -19,9 +19,9 @@ function model(sequelize, DataTypes) {
 
     const _model = sequelize.define('cart', attributes, options)
     _model.associate = function(models) {
-        _model.belongsTo(models.customer, {
+        _model.hasOne(models.customer, {
             foreignKey: 'customerId',
-            as: 'customer'
+            as: 'cart'
         });
 
         _model.belongsToMany(models.product, {
