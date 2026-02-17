@@ -46,11 +46,6 @@ function model(sequelize, DataTypes) {
             foreignKey: 'paymentId',
             as: "payment"
         });
-
-        _model.hasMany(models.orderDetail, {
-            foreignKey: 'orderId',
-            as: 'orderDetails'
-        });
         
     }
 

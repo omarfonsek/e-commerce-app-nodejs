@@ -49,11 +49,6 @@ function model(sequelize, DataTypes) {
             foreignKey: 'productId',
             as: 'orders'
         });
-
-        _model.hasMany(models.orderDetail, {
-            foreignKey: 'productId',
-            as: 'productDetails'
-        })
     };
 
     return _model;
