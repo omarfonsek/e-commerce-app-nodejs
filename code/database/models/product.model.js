@@ -8,6 +8,7 @@ function model(sequelize, DataTypes) {
         },
         name: {
             type: DataTypes.STRING(255),
+            unique: true,
             allowNull: false
         },
         picture: {

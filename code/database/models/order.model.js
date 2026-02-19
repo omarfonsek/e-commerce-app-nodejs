@@ -6,14 +6,6 @@ function model(sequelize, DataTypes) {
             autoIncrement: true,
             allowNull: false
         },
-        customerId: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
-        paymentId: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
         amount: {
             type: DataTypes.DOUBLE(10, 2),
             allowNull: true
