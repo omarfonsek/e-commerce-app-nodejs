@@ -5,7 +5,7 @@ const createProduct = async (data) => {
     if (product) return { status: 409, message: 'Product Already existy' }
     data = {...data}
     product = await models.product.create(data);
-    return {succes: true,  status: 200, message: 'Product added Database', product}
+    return {succes: true,  status: 201, message: 'Product added Database', product}
 }
 
 module.exports = { createProduct };
