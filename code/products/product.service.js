@@ -6,4 +6,11 @@ const getAllProducts = async () => {
     return {success: true, status: 200, data}
 }
 
-module.exports = { getAllProducts };
+const getProductById = async (id) => {
+    const product = await models.product.findByPk(id);
+    if(!product) return {success: false, status: 404, message: 'Not Found'};
+    return {success: true, status: 200, product};
+}
+
+
+module.exports = { getAllProducts, getProductById };
