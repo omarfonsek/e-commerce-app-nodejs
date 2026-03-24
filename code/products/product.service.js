@@ -1,4 +1,4 @@
-const models = require("./../database/models");
+const models = require("../database/models");
 
 const updateProduct = async (id, data) => {
     const product = await models.product.findByPk(id);
