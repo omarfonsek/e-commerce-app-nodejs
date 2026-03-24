@@ -17,3 +17,4 @@ const updateProduct = (req, res, next) => {
     }
 
 module.exports = { updateProduct };
+

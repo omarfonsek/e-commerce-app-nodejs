@@ -48,8 +48,9 @@ function model(sequelize, DataTypes) {
 
         _model.hasOne(models.cart, {
             foreignKey: 'customerId',
-            as: 'cart'
-        });
+            as: 'cartDetail'
+    });
+
     }
 
     
