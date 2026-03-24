@@ -12,5 +12,13 @@ const getProductById = async (id) => {
     return {success: true, status: 200, product};
 }
 
+const createProduct = async (data) => {
+    let product = await models.product.findOne({ where: { name: data?.name } });
+    if (product) return { status: 409, message: 'Product Already existy' }
+    data = {...data}
+    product = await models.product.create(data);
+    return {succes: true,  status: 201, message: 'Product added Database', product}
+}
 
-module.exports = { getAllProducts, getProductById };
+module.exports = { getAllProducts, getProductById, createProduct };
+
