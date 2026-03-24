@@ -8,6 +8,7 @@ function model(sequelize, DataTypes) {
         },
         name: {
             type: DataTypes.STRING(255),
+            unique: true,
             allowNull: false
         },
         picture: {
@@ -49,11 +50,6 @@ function model(sequelize, DataTypes) {
             foreignKey: 'productId',
             as: 'orders'
         });
-
-        _model.hasMany(models.orderDetail, {
-            foreignKey: 'productId',
-            as: 'productDetails'
-        })
     };
 
     return _model;
