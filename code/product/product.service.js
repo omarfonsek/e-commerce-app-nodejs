@@ -1,4 +1,16 @@
-const models = require('../database/models
+const models = require("../database/models");
+
+const getAllProducts = async () => {
+    const data = await models.product.findAll();
+    if( data.length == 0 ) return {sucess: true, status: 204, message: "There aren't products"};
+    return {success: true, status: 200, data}
+}
+
+const getProductById = async (id) => {
+    const product = await models.product.findByPk(id);
+    if(!product) return {success: false, status: 404, message: 'Not Found'};
+    return {success: true, status: 200, product};
+}
 
 const createProduct = async (data) => {
     let product = await models.product.findOne({ where: { name: data?.name } });
@@ -23,4 +35,5 @@ const updateProduct = async (id, data) => {
     return {success: true, updatedProduct, status: 200};
 }
 
-module.exports = { createProduct, updateProduct };
+module.exports = { getAllProducts, getProductById, createProduct, updateProduct };
+
