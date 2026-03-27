@@ -1,4 +1,4 @@
-const models = require('../database/models')
+const models = require('../database/models
 
 const createProduct = async (data) => {
     let product = await models.product.findOne({ where: { name: data?.name } });
