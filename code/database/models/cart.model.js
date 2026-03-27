@@ -6,8 +6,12 @@ function model(sequelize, DataTypes) {
             autoIncrement: true,
             allowNull: false
         },
-        customerId: {
+        quantity: {
             type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        total: {
+            type: DataTypes.DOUBLE(10, 2),
             allowNull: false
         },
     };
@@ -19,10 +23,10 @@ function model(sequelize, DataTypes) {
 
     const _model = sequelize.define('cart', attributes, options)
     _model.associate = function(models) {
-        _model.hasOne(models.customer, {
+        _model.belongsTo(models.customer, {
             foreignKey: 'customerId',
-            as: 'cart'
-        });
+            as: 'customerDetail'
+    });
 
         _model.belongsToMany(models.product, {
             through: 'cartProducts',
