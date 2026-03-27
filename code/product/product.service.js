@@ -35,5 +35,12 @@ const updateProduct = async (id, data) => {
     return {success: true, updatedProduct, status: 200};
 }
 
-module.exports = { getAllProducts, getProductById, createProduct, updateProduct };
+const deleteProduct = async (id) => {
+    const product = await models.product.findByPk(id);
+    if (!product) return { success: false, status: 404, message: "Not Found" }
+    await product.destroy();
+    return { success: true, data: [], status: 204, message: "No content"}
+}
+
+module.exports = { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct };
 
