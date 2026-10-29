@@ -6,6 +6,14 @@ function model(sequelize, DataTypes) {
             autoIncrement: true,
             allowNull: false
         },
+        customerId: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
+        paymentId: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
         amount: {
             type: DataTypes.DOUBLE(10, 2),
             allowNull: true
@@ -37,6 +45,11 @@ function model(sequelize, DataTypes) {
         _model.belongsTo(models.payment, {
             foreignKey: 'paymentId',
             as: "payment"
+        });
+
+        _model.hasMany(models.orderDetail, {
+            foreignKey: 'orderId',
+            as: 'orderDetails'
         });
         
     }

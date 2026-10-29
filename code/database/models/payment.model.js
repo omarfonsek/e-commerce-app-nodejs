@@ -6,6 +6,10 @@ function model(sequelize, DataTypes) {
             autoIncrement: true,
             allowNull: false
         },
+        customerId: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
         type: {
             type: DataTypes.STRING(50),
             allowNull: false,

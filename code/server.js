@@ -8,4 +8,3 @@ app.use('/db', require('./database/db'));
 app.use('/products', require("./product/routes"));
 
 module.exports = app;
- 
