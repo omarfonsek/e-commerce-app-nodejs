@@ -10,7 +10,7 @@ const getAllProducts = (req, res, next) => {
 }
 
 const getProductById = (req, res, next) => {
-    const { id } = req.params;
+    const { id } = req.validated.params;
     service
     .getProductById(id)
     .then((data) => {
@@ -21,42 +21,30 @@ const getProductById = (req, res, next) => {
 
 const createProduct = (req, res, next) => {
     service
-    .createProduct(req.body)
+    .createProduct(req.validated.body)
     .then((data) => {
-        res.status(data.status);
-        res.json(data);
+        res.status(data.status).json(data);
     })
     .catch(next); // Se envía el error al middleware global de erroes
 }
 
 const updateProduct = (req, res, next) => {
-    const { id } = req.params;
-    const  data  = req.body;
+    const { id } = req.validated.params;
+    const  data  = req.validated.body;
     service
     .updateProduct(id, data)
-    .then((result) => {
-        if (result.success) {
-            res.status(result.status).json(result.updatedProduct);
-        }
-        else {
-            res.status(result.status).json({ error: result.error });
-        }
+    .then((data) => {
+            res.status(data.status).json(data.updatedProduct);
     })
     .catch(next);
     }
 
 const deleteProduct = (req, res, next) => {
-    const { id } = req.params;
+    const { id } = req.validated.params;
     service
     .deleteProduct(id)
-    .then((result) => {
-        if (result.success) {
-            res.status(result.status).json(result.data);
-        }
-        else {
-            res.status(result.status).json({ error: result.message });
-        }
-        
+    .then((data) => {
+            res.status(data.status).json(data.data);
     })
     .catch(next);
 }
