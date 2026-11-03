@@ -8,7 +8,6 @@ const db = {};
 connect();
 
 async function connect() {
-    console.log(dbConfig);
     const sequelize = new Sequelize(
         dbConfig.connection.dbName,
         dbConfig.connection.user,
@@ -23,7 +22,7 @@ async function connect() {
                 acquire: 30000,
                 idle: 10000,
             },
-            loggin: false,
+            logging: dbConfig.configOptions.logging,
         },
     );
     fs.readdirSync(__dirname)
