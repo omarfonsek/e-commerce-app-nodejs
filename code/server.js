@@ -2,10 +2,13 @@ const express = require('express');
 const app = express();
 const errorHandler = require('./middlewares/error.middleware');
 const { NotFoundError } = require('./middlewares/errors/httpErrors');
+const { environment } = require("./config/config");
 
 app.use(express.json());
 
-app.use('/db', require('./database/db'));
+if(environment === 'development') {
+    app.use('/db', require('./database/db'))
+}
 
 app.use('/products', require("./product/routes"));
 

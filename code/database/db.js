@@ -2,17 +2,13 @@ const models = require("./models");
 const express = require("express");
 const router = express.Router();
 
-async function initialize() {
+router.post("/sync", async function (req, res, next) {
     try {
-        await models.sequelize.sync({alter: true});
+        await models.sequelize.sync({ alter: true });
+        res.json({ synced: true, at: new Date().toISOString() });
     } catch (err) {
-        console.log(err);
+        next(err);
     }
-}
-
-router.head("/sync", async function (req, res) {
-    await initialize();
-    res.json();
 });
 
 module.exports = router;
