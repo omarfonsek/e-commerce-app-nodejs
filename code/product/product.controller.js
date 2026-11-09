@@ -4,7 +4,7 @@ const getAllProducts = (req, res, next) => {
     service
     .getAllProducts()
     .then((data) => {
-        res.status(data.status).json(data);
+        res.status(data.status).json({ products: data.products });
     })
     .catch(next);
 }
@@ -14,7 +14,7 @@ const getProductById = (req, res, next) => {
     service
     .getProductById(id)
     .then((data) => {
-        res.status(data.status).json(data);
+        res.status(data.status).json({ product: data.product });
     })
     .catch(next);
 }
@@ -23,9 +23,9 @@ const createProduct = (req, res, next) => {
     service
     .createProduct(req.validated.body)
     .then((data) => {
-        res.status(data.status).json(data);
+        res.status(data.status).json({ product: data.product });
     })
-    .catch(next); // Se envía el error al middleware global de erroes
+    .catch(next);
 }
 
 const updateProduct = (req, res, next) => {
@@ -34,7 +34,7 @@ const updateProduct = (req, res, next) => {
     service
     .updateProduct(id, data)
     .then((data) => {
-            res.status(data.status).json(data.updatedProduct);
+            res.status(data.status).json({ product: data.product });
     })
     .catch(next);
     }
@@ -44,7 +44,7 @@ const deleteProduct = (req, res, next) => {
     service
     .deleteProduct(id)
     .then((data) => {
-            res.status(data.status).json(data.data);
+            res.status(data.status).end();
     })
     .catch(next);
 }
