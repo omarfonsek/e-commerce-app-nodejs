@@ -191,7 +191,7 @@ Expected response:
 ### 6. Verify
 
 ```bash
-curl -i http://localhost:3000/products   # 204 No Content (no products yet)
+curl -i http://localhost:3000/products   # 200 {"products":[]} (no products yet)
 curl -i http://localhost:3000/nope       # 404 ROUTE_NOT_FOUND
 ```
 
@@ -218,12 +218,25 @@ Base URL: `http://localhost:<PORT_APP>`. Request bodies must be sent as `applica
 
 | Method | Path | Description | Success |
 |---|---|---|---|
-| `GET` | `/products` | List all products | `200`, or `204` if there are none |
+| `GET` | `/products` | List all products | `200` (empty array if there are none) |
 | `GET` | `/products/:id` | Get a product by id | `200` |
 | `POST` | `/products` | Create a product | `201` |
 | `PUT` | `/products/:id` | Partially update a product | `200` |
 | `DELETE` | `/products/:id` | Delete a product | `204` |
 | `POST` | `/db/sync` | Create or update the schema (development only) | `200` |
+
+### Response format
+
+All success responses follow the same contract:
+
+| Case | Status | Body |
+|---|---|---|
+| Single resource | `200` / `201` | The resource wrapped in a key named after the entity: `{ "product": { ... } }` |
+| Collection | `200` | The list wrapped in the plural key: `{ "products": [ ... ] }`. An empty collection is `{ "products": [] }`, never `204` |
+| No content | `204` | Empty body (used by `DELETE`) |
+
+- The HTTP status code is the only success indicator: bodies do not include `success`, `status` or `message` fields.
+- Error responses use a different, fixed shape: see [Error handling](#error-handling).
 
 ### Product fields
 
@@ -239,7 +252,7 @@ The `id` path parameter must be a positive integer within the 32-bit `INT` range
 
 ### Examples
 
-**Create a product**
+**Create a product** (`201`)
 
 ```bash
 curl -X POST http://localhost:3000/products \
@@ -249,9 +262,6 @@ curl -X POST http://localhost:3000/products \
 
 ```json
 {
-  "success": true,
-  "status": 201,
-  "message": "Product added Database",
   "product": {
     "id": 1,
     "name": "Coffee Mug",
@@ -266,17 +276,31 @@ curl -X POST http://localhost:3000/products \
 
 **List products** (`200`)
 
+```bash
+curl http://localhost:3000/products
+```
+
 ```json
-{ "success": true, "status": 200, "data": [ { "id": 1, "name": "Coffee Mug", "...": "..." } ] }
+{ "products": [ { "id": 1, "name": "Coffee Mug", "...": "..." } ] }
+```
+
+With no products:
+
+```json
+{ "products": [] }
 ```
 
 **Get a product** (`200`)
 
-```json
-{ "success": true, "status": 200, "product": { "id": 1, "name": "Coffee Mug", "...": "..." } }
+```bash
+curl http://localhost:3000/products/1
 ```
 
-**Update a product** (`200`, returns the updated product without a wrapper)
+```json
+{ "product": { "id": 1, "name": "Coffee Mug", "...": "..." } }
+```
+
+**Update a product** (`200`, returns the updated product)
 
 ```bash
 curl -X PUT http://localhost:3000/products/1 \
@@ -285,7 +309,7 @@ curl -X PUT http://localhost:3000/products/1 \
 ```
 
 ```json
-{ "id": 1, "name": "Coffee Mug", "picture": "https://example.com/mug.png", "price": 15, "...": "..." }
+{ "product": { "id": 1, "name": "Coffee Mug", "picture": "https://example.com/mug.png", "price": 15, "...": "..." } }
 ```
 
 **Delete a product** (`204 No Content`, empty body)
@@ -293,8 +317,6 @@ curl -X PUT http://localhost:3000/products/1 \
 ```bash
 curl -i -X DELETE http://localhost:3000/products/1
 ```
-
-> The success response shape currently differs between endpoints (see [Known limitations](#known-limitations)).
 
 ## Error handling
 
@@ -390,7 +412,6 @@ Make sure you start it from the `code/` directory.
 - No authentication: write endpoints are public.
 - No automated tests and no CI yet.
 - The schema is managed with `sequelize.sync({ alter: true })`; there are no migrations.
-- The success response shape is not consistent across product endpoints, and an empty product list returns `204` instead of `200` with an empty array.
 - The `description` column exists in the product model but cannot be set through the API yet.
 - There is no Dockerfile for the API; Docker is only used for the database.
 
@@ -398,5 +419,6 @@ Make sure you start it from the `code/` directory.
 
 - Branches follow `feature/<name>` (for example, `feature/GET-product`) and are merged into `master` through pull requests.
 - New domains follow the `product/` layout: `routes.js`, `*.controller.js` and `*.service.js`, with Zod schemas in `middlewares/validators/`.
+- New endpoints follow the [response format](#response-format): entity-named keys, no `success`/`status`/`message` in the body, and `204` without a body.
 - Services throw `AppError` subclasses with codes from `middlewares/errors/codes.js`; add new business codes to that catalog first.
 - After adding or changing a model, run `POST /db/sync` again.
