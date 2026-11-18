@@ -13,6 +13,7 @@ REST API for an e-commerce backend built with Express 5, Sequelize and MySQL, wi
 - [Prerequisites](#prerequisites)
 - [Getting started](#getting-started)
 - [Configuration](#configuration)
+- [Running tests](#running-tests)
 - [API reference](#api-reference)
 - [Error handling](#error-handling)
 - [Available scripts](#available-scripts)
@@ -26,6 +27,7 @@ REST API for an e-commerce backend built with Express 5, Sequelize and MySQL, wi
 - **Input validation with Zod:** body and URL params are validated before reaching the controller. All validation errors from every source are collected and returned together.
 - **Centralized error handling:** application and Sequelize errors are mapped to consistent HTTP status codes and a single JSON error format.
 - **Strict id parsing:** URL ids must be positive 32-bit integers (no leading zeros, signs, decimals, scientific or hex notation).
+- **Automated tests:** `node:test` + `supertest` against a dedicated MySQL test database, protected by a guard that refuses to run on any database whose name does not end in `_test`.
 - **Development-only schema sync:** `POST /db/sync` creates or updates the tables from the Sequelize models. It is only mounted when `NODE_ENV=development`.
 
 ## Tech stack
@@ -39,6 +41,7 @@ REST API for an e-commerce backend built with Express 5, Sequelize and MySQL, wi
 | Database | MySQL 8 (via `mysql2`) |
 | Validation | Zod 4 |
 | Configuration | dotenv |
+| Testing | `node:test` (built-in runner) + supertest |
 
 ## Architecture
 
@@ -78,6 +81,7 @@ Models are auto-loaded: every `*.model.js` file in `code/database/models/` is re
     ├── local.js                  # Entry point: loads env and starts the listener
     ├── server.js                 # Express app (exported, no listener)
     ├── .env.example              # Environment variable template
+    ├── .env.test.example         # Test environment template (copy to .env.test)
     ├── .nvmrc                    # Node.js version (24)
     ├── config/
     │   └── config.js             # Reads env variables into the dbConfig structure
@@ -93,10 +97,14 @@ Models are auto-loaded: every `*.model.js` file in `code/database/models/` is re
     │   │   └── codes.js          # Frozen catalog of business error codes
     │   └── utils/
     │       └── AppError.js       # Base application error class
-    └── product/                  # Products domain
-        ├── routes.js
-        ├── product.controller.js
-        └── product.service.js
+    ├── product/                  # Products domain
+    │   ├── routes.js
+    │   ├── product.controller.js
+    │   └── product.service.js
+    └── test/                     # Test suite (node:test + supertest)
+        ├── helpers/
+        │   └── db.js             # resetDb/closeDb + guard: DB_NAME must end in _test
+        └── smoke.test.js         # Smoke test: app, test database and runner are wired
 ```
 
 ## Prerequisites
@@ -211,6 +219,88 @@ All variables are listed in [`code/.env.example`](code/.env.example). `code/.env
 | `NODE_ENV` | `development` mounts `POST /db/sync` and adds `stack` to error responses. | `development` |
 
 > The default credentials are placeholders for a local, throwaway database. Do not reuse them anywhere else.
+
+The test suite uses its own file, `code/.env.test`, with the same keys: see [Running tests](#running-tests).
+
+## Running tests
+
+The tests run with the built-in Node.js runner (`node:test`) and [supertest](https://github.com/ladjs/supertest), which sends HTTP requests to the Express app exported by `server.js` without starting a listener.
+
+They need a **separate MySQL database**: before each test file, the helper in `test/helpers/db.js` runs `sequelize.sync({ force: true })`, which **drops and recreates every table**. Never point the tests at a database whose data you want to keep.
+
+### 1. Create the test database and user
+
+Open a MySQL shell as root inside the container (it prompts for the root password):
+
+```bash
+docker exec -it ecommerce-db mysql -uroot -p
+```
+
+Create a dedicated database and a user that can access **only** that database. Replace `<test_user_password>` with a password of your choice:
+
+```sql
+CREATE DATABASE ecommerce_test;
+CREATE USER 'ecommerce_test_user'@'%' IDENTIFIED BY '<test_user_password>';
+GRANT ALL PRIVILEGES ON ecommerce_test.* TO 'ecommerce_test_user'@'%';
+```
+
+Type `exit` to leave the MySQL shell. Optionally, log in as the new user (`-uecommerce_test_user -p`) and check that `SHOW DATABASES;` lists `ecommerce_test` but not `ecommerce`.
+
+### 2. Create your `.env.test`
+
+Bash:
+
+```bash
+cp .env.test.example .env.test
+```
+
+PowerShell:
+
+```powershell
+Copy-Item .env.test.example .env.test
+```
+
+Set `DB_PASS` to the password from the previous step, and `DB_PORT` to the same port as in your `.env`. `code/.env.test` is ignored by git: never commit it.
+
+| Variable | Value in `.env.test.example` | Notes |
+|---|---|---|
+| `DB_USER` | `ecommerce_test_user` | Test-only user |
+| `DB_PASS` | `your_test_user_password` | Replace it |
+| `DB_NAME` | `ecommerce_test` | **Must end in `_test`**, or the suite refuses to run |
+| `NODE_ENV` | `test` | `POST /db/sync` is not mounted and errors have no `stack` |
+
+`PORT_APP` is not needed: supertest never opens a port.
+
+### 3. Run the suite
+
+The MySQL container must be running.
+
+```bash
+npm test
+```
+
+The script runs `node --env-file=.env.test --test --test-concurrency=1 "test/**/*.test.js"`:
+
+- `--env-file=.env.test` loads the test configuration **before** any code runs. dotenv (called in `config/config.js`) does not override variables that already exist, so `.env` cannot replace them. It can still fill in keys that are **missing** from `.env.test`, which is why every database key must be defined there.
+- `--test-concurrency=1` runs the test files one at a time. Each file resets the same database, so running them in parallel would make them interfere with each other.
+- Test files live in `code/test/` and must end in `.test.js`.
+
+### Safety layers
+
+Three independent layers keep the tests away from your development data:
+
+| Layer | Protects you when |
+|---|---|
+| Separate database (`ecommerce_test`) | Everything is configured correctly |
+| Test user with privileges only on `ecommerce_test` | `DB_NAME` ends up pointing to another database |
+| Guard in `test/helpers/db.js`: if `DB_NAME` is missing or does not end in `_test`, it throws as soon as the module is loaded, before any connection is opened | Everything else failed, including credentials filled in from `.env` |
+
+### Writing tests
+
+- Require `./helpers/db` **before** `../server`, so a wrong configuration stops the file before the app loads.
+- Call `resetDb` in a `before` hook and `closeDb` in an `after` hook. Without `closeDb`, the connection pool keeps the process alive for several seconds after the tests finish.
+- Use `node:assert/strict`. The loose `assert.deepEqual` compares with `==`, so `"10.50"` would equal `10.5`.
+- Never expose `sync({ force: true })` through an HTTP route; it belongs only in the test helper.
 
 ## API reference
 
@@ -361,7 +451,7 @@ Run from `code/`:
 |---|---|
 | `npm ci` | Clean install from `package-lock.json` |
 | `npm start` | Start the API (`node local.js`) |
-| `npm test` | Placeholder: no test suite yet, exits with code 1 |
+| `npm test` | Run the test suite against the test database (see [Running tests](#running-tests)) |
 
 ## Troubleshooting
 
@@ -406,11 +496,31 @@ Your Node.js or npm version does not match the requirements. Switch to Node.js 2
 
 Make sure you start it from the `code/` directory.
 
+**`npm test` fails with `Database name must end in "_test"` or `Database name is required`**
+
+The guard in `test/helpers/db.js` stopped the suite before it touched any database. Check that `code/.env.test` exists and defines `DB_NAME` (for example, `ecommerce_test`). Also check that `DB_NAME` is not set in your shell: variables already present in the environment take precedence over `.env.test`.
+
+**`npm test` fails with `Access denied for user 'ecommerce_test_user'`**
+
+The test user or its privileges do not exist, or `DB_PASS` in `.env.test` does not match. Repeat [step 1 of Running tests](#1-create-the-test-database-and-user).
+
+**`npm test` fails with `ECONNREFUSED`**
+
+The MySQL container is not running. Start it with `docker start ecommerce-db`.
+
+**`npm test` fails with `.env.test: not found`**
+
+Create it from the template (see [step 2 of Running tests](#2-create-your-envtest)). The suite never falls back to `.env`.
+
+**`npm test` reports `tests 0`**
+
+No file matched `test/**/*.test.js`. Check the file name and run the command from `code/`.
+
 ## Known limitations
 
 - Only the products module exposes endpoints.
 - No authentication: write endpoints are public.
-- No automated tests and no CI yet.
+- No CI yet: the test suite currently contains only a smoke test, and it must be run locally.
 - The schema is managed with `sequelize.sync({ alter: true })`; there are no migrations.
 - The `description` column exists in the product model but cannot be set through the API yet.
 - There is no Dockerfile for the API; Docker is only used for the database.
@@ -422,3 +532,4 @@ Make sure you start it from the `code/` directory.
 - New endpoints follow the [response format](#response-format): entity-named keys, no `success`/`status`/`message` in the body, and `204` without a body.
 - Services throw `AppError` subclasses with codes from `middlewares/errors/codes.js`; add new business codes to that catalog first.
 - After adding or changing a model, run `POST /db/sync` again.
+- Run `npm test` before opening a pull request. New tests go in `code/test/` with the `.test.js` suffix (see [Writing tests](#writing-tests)).
